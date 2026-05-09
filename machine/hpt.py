@@ -2,8 +2,8 @@ import math
 from dataclasses import dataclass
 
 from core.gas_func import q_lambda
-from core.geometry import area_calc, diameter_from_area, calculate_section_diameters
-from core.geometry_models import SectionDiameters, MachineGeometry
+from core.geometry import area_calc, calculate_section_diameters
+from core.geometry_models import MachineGeometry
 from configs.constants import *
 from configs.modes import *
 
@@ -63,6 +63,8 @@ class HighPressureTurbine:
 
         self.T_blade_cooling = None
 
+        self.blade_height_rel = None
+        self.h_blade_out = None
         self.d_hub_out_rel  = None
         self.D_mean = None
 
@@ -75,19 +77,19 @@ class HighPressureTurbine:
         self.T_blade_cooling = T_blade / 0.95 - self.params.theta * (T_blade / 0.95 - self.params.T_cooling_air)
 
         # относительная высота лопатки ТВД
-        blade_height_rel = (2 * (self.u_mid ** 2) * self.params.density * self.params.blade_force_coeff * self.params.k_sigma
+        self.blade_height_rel = (2 * (self.u_mid ** 2) * self.params.density * self.params.blade_force_coeff * self.params.k_sigma
                             ) / (self.params.sigma_allow* 1e6)
         
-        q_lambda_2_hpt = q_lambda(lam=self.params.lambda_2, k=K_GAS) # заменить k
-        alpha_2_hpt_rad = math.radians(self.params.alpha_2_deg)
-        F_out_hpt = area_calc(G=(self.params.G_in + self.params.G_cooling_rel * self.params.G_hpc_in),
-                               T=self.params.T_out, s=S_GAS, p=self.params.p_out, q=(q_lambda_2_hpt * math.sin(alpha_2_hpt_rad)))
+        q_lambda_2 = q_lambda(lam=self.params.lambda_2, k=K_GAS) # заменить k
+        alpha_2_rad = math.radians(self.params.alpha_2_deg)
+        F_out = area_calc(G=(self.params.G_in + self.params.G_cooling_rel * self.params.G_hpc_in),
+                               T=self.params.T_out, s=S_GAS, p=self.params.p_out, q=(q_lambda_2 * math.sin(alpha_2_rad)))
         
-        h_blabe_out_hpt = math.sqrt(F_out_hpt / (math.pi * blade_height_rel))
+        self.h_blade_out = math.sqrt(F_out / (math.pi * self.blade_height_rel))
 
         hpt_out = calculate_section_diameters(
-            D_ref=h_blabe_out_hpt * blade_height_rel,
-            F=F_out_hpt,
+            D_ref=self.h_blade_out * self.blade_height_rel,
+            F=F_out,
             mode_name='mid',
             MODES_D=MODES_D
         )
@@ -96,7 +98,7 @@ class HighPressureTurbine:
 
         q_lambda_g = q_lambda(lam=self.params.lambda_gas, k=K_GAS) # заменить k
 
-        F_in_hpt = area_calc(G=self.params.G_in, T=self.params.T_gas, s=S_GAS, p=self.params.p_gas, q=q_lambda_g)
+        F_in = area_calc(G=self.params.G_in, T=self.params.T_gas, s=S_GAS, p=self.params.p_gas, q=q_lambda_g)
 
         # Базовые диаметры ТВД
         reference_diameters_hpt = {
@@ -109,7 +111,7 @@ class HighPressureTurbine:
 
         hpt_in = calculate_section_diameters(
             D_ref=reference_diameters_hpt[mode['ref']],
-            F=F_in_hpt,
+            F=F_in,
             mode_name=self.params.mode,
             MODES_D=MODES_D
         )
