@@ -4,9 +4,16 @@ import math
 def velocity_critical(k, R, T):
     return math.sqrt(2 * k / (k + 1) * R * T)
 
+def local_speed_velocity(a_crit, k, lam):
+    tau_lam = tau_lambda(lam=lam, k=k)
+    return a_crit * math.sqrt((k + 1) / 2 * tau_lam)
+
 def polotrop(pi, T_in, T_out):
     coef = math.log10(pi) / math.log10(T_out / T_in)
     return coef / (coef - 1)
+
+def tau_lambda(lam, k):
+    return 1 - (k - 1) / (k + 1) * lam ** 2
 
 def pi_lambda(lam, k):
     pi_lambda = (1 - (k - 1) / (k + 1) * lam**2) ** (k / (k-1))
