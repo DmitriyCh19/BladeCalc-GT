@@ -1,9 +1,9 @@
 import math
 from dataclasses import dataclass
 
-from core.geometry_models import SectionDiameters, MachineGeometry
+from core.geometry_models import MachineGeometry
 from core.gas_func import q_lambda, polotrop, velocity_critical
-from core.geometry import area_calc, diameter_from_area, reconstruct_section_diameters, calculate_section_diameters
+from core.geometry import area_calc, reconstruct_section_diameters, calculate_section_diameters
 from configs.constants import *
 from configs.modes import *
 
