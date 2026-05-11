@@ -32,3 +32,11 @@ def reconstruct_section_diameters(F, hub_to_tip_ratio):
         mid=D_mid,
         tip=D_tip
     )
+
+def relative_diameter_hub(D_ref, F, mode_name):
+    K = {'tip': (4,0),
+         'mid': (2,2),
+         'hub': (0,4)}
+    k1, k2 = K[mode_name]
+    d = math.sqrt((D_ref ** 2 - k1 * F / math.pi) / (D_ref ** 2 + k2 * F / math.pi))
+    return d
