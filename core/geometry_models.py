@@ -23,8 +23,6 @@ class VelocityTriangle:
     alpha_deg: float | None = None
     beta_deg: float | None = None
 
-    mach: float | None = None
-
 @dataclass
 class RotorGeometry:
     inlet: SectionDiameters

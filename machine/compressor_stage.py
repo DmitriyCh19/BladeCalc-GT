@@ -7,30 +7,6 @@ from core.gas_func import velocity_critical, q_lambda, local_speed_velocity
 from core.geometry import area_calc, relative_diameter_hub, calculate_section_diameters
 from core.geometry_models import VelocityTriangle, RotorGeometry
 
-
-# D_tip = const
-z = 9
-
-alpha11_deg = 60.546
-
-L_stage_rel = [0.24227, 0.252, 0.271, 0.281, 0.271, 0.261, 0.251, 0.241]
-D_tip = 0.5923
-eff_stage = [0.87, 0.89, 0.89, 0.9, 0.91, 0.9, 0.885, 0.885]
-eff_rel = [1, 0.99, 0.98, 0.97, 0.96, 0.95, 0.94, 0.935, 0.93]
-reaction_stage = [0.5, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57]
-c1a_stage = [193.4903, 191.9, 190.3, 188.7, 187.2, 187.2, 185.6, 184.01, 182.4]
-h_rot_rel = [3.5, 3.5, 3.3, 3.1, 2.9, 2.7, 2.4, 2.2, 2]
-G = 72.4359
-d_hub_rel = 0.74
-lambda_in = 0.58
-u_tip_1 = 393.4265
-n = 12692
-T_in = 437.9788
-p_in = 355623
-pi = 6.58
-D_1mid_1 = 0.521
-D_1hub_1 = 0.4383
-
 @dataclass
 class CompressorStageParameters:
     mode: str
@@ -79,13 +55,38 @@ class InletSolution:
 
     L_ku_rel: float
 
+@dataclass
+class CompressorStageResult:
+    thermodynamics: StageThermodynamics
+    inlet_triangle: VelocityTriangle
+    outlet_triangle: VelocityTriangle
+    rotor: RotorGeometry
+
+    u_mid: float
+    flow_coefficient: float
+    J: float
+    lambda_1: float
+    lambda_2: float
+    mach_1_rel: float
+    mach_2_abs: float
+    F_inlet: float
+    F_outlet: float
+
 class CompressorStage:
     def __init__(self, params:CompressorStageParameters):
         self.params = params
 
+        self.inlet_triangle = None
+        self.outlet_triangle = None
+
+        self.rotor = None
+        self.stage = None
+
     def calculate(self):
         thermo = self.calculate_thermodynamics()
-        
+        self.calculate_rotor(thermo=thermo)
+
+    def calculate_rotor(self, thermo:StageThermodynamics):    
         L_ku = thermo.L_stage* self.params.eff_tip_rel
 
         u_mid_in = self.params.u_tip * math.sqrt((1 + self.params.d_hub_rel ** 2) / 2)
@@ -112,19 +113,17 @@ class CompressorStage:
         alpha1_rad = math.radians(self.inlet_triangle.alpha_deg)
         self.inlet_triangle.beta_deg = math.degrees(math.atan(flow_coefficient / (1 - flow_coefficient * (1 / math.tan(alpha1_rad)))))
 
-
         self.inlet_triangle.w = math.sqrt(self.inlet_triangle.c_a ** 2 + (u_mid - self.inlet_triangle.c_u) ** 2)
 
         a_1 = local_speed_velocity(a_crit=a_1crit, k=K_AIR, lam=inlet.lambda_1)
 
-        self.inlet_triangle.mach = self.inlet_triangle.w  / a_1
+        mach_1 = self.inlet_triangle.w  / a_1
 
         par_L_c = inlet.L_ku_rel / flow_coefficient
         par_rho_c = self.params.reaction / flow_coefficient
         par_L_c_bt = 0.7 - 0.27 * par_rho_c + 0.16 * par_rho_c ** 2
         J = par_L_c / par_L_c_bt
         rotor_solidity = 0.225 + 0.275 * J + 0.5 * J ** 2
-
 
         z_rotor = self.params.h_rot_rel * rotor_solidity * math.pi * stage_1.mid / h_1
         z_rotor = math.ceil(z_rotor)
@@ -138,15 +137,14 @@ class CompressorStage:
         self.outlet_triangle = VelocityTriangle(c=math.sqrt(c_2a ** 2 + c_2u ** 2),
                                                 c_a=c_2a,
                                                 c_u=c_2u)
+        
         a_2crit = velocity_critical(k=K_AIR, R=R_AIR, T=thermo.T_out)
         lambda_2 = self.outlet_triangle.c / a_2crit
         a_2 = local_speed_velocity(a_crit=a_2crit, k=K_AIR, lam=lambda_2)
 
         alpha2_rad = math.asin(self.outlet_triangle.c_a / self.outlet_triangle.c)
-        self.outlet_triangle.mach = self.outlet_triangle.c / a_2
+        mach_2 = self.outlet_triangle.c / a_2
         self.outlet_triangle.alpha_deg = math.degrees(alpha2_rad)
-
-
         
         sigma_stator = thermo.p_out / thermo.p_2
 
@@ -167,31 +165,43 @@ class CompressorStage:
 
         beta_2_rad = math.asin(self.outlet_triangle.c_a / self.outlet_triangle.w)
         self.outlet_triangle.beta_deg = math.degrees(beta_2_rad)
+        self.rotor = RotorGeometry(inlet=stage_1, 
+                              outlet=stage_2, 
+                              blade_height_in=h_1,
+                              blade_height_out=h_2,
+                              blade_chord=rotor_blade_chord,
+                              blade_count=z_rotor, solidity=rotor_solidity)
+        
+        self.stage = CompressorStageResult(thermodynamics=thermo,
+                                           inlet_triangle=self.inlet_triangle,
+                                           outlet_triangle=self.outlet_triangle,
+                                           rotor=self.rotor,
+                                           u_mid=u_mid,
+                                           flow_coefficient=flow_coefficient,
+                                           J=J, lambda_1=inlet.lambda_1, lambda_2=lambda_2,
+                                           mach_1_rel=mach_1, mach_2_abs=mach_2,
+                                           F_inlet=inlet.area, F_outlet=F_outlet)
 
-
-        # print(f'pi = {pi}')
+    def print_stage_result(self) -> None:
         # print(f'u_mid = {u_mid}')
         # print(f'a_crit = {a_1crit}')
         # print(f'lambda 1a = {lambda_1a}')
         # print(f'q_lambda_a1 {q_lambda_1a}')
-
         # print(f'u_mid = {u_mid}')
-
         # print(f'коэфф расхода {flow_coefficient}')
-
         # print(f'Диаметры на входе {stage_1}')
         # print(f'высота лопатки РК {h_1}')
         # print(f'скорость звука на входе {a_1}')
-        # print(f'Треугольник скоростей вход {self.inlet_triangle}')
+        print(f'Треугольник скоростей вход {self.inlet_triangle}')
         # print(f'безразмерный параметр J {J}')
         # print(f'густота решетки РК {rotor_solidity}')
         # print(f'число лопаток РК {z_rotor}')
         # print(f'относительная высота рабочей лопатки {h_rot_rel}')
         # print(f'хорда рабочих лопаток {rotor_blade_chord}')
-
         # print(f'lamda 2 = {lambda_2}')
         # print(f'скорость звука на выходе из РК {a_2}')
-        # print(f'Треугольник выхода из РК {self.outlet_triangle}')
+        print(f'Треугольник выхода из РК {self.outlet_triangle}')
+        print(f'Геометрия ротора {self.rotor}')
         # print(f'Площадь на выходе из РК {F_outlet}')
         # print(f'относительный диаметр втулки на выходе из РК {d_2_hub_rel}')
         # print(f'Диаметры на выходе из РК {stage_2}')
@@ -241,31 +251,4 @@ class CompressorStage:
         return InletSolution(area=F, u_mid=u_mid, lambda_1=lambda_1, L_ku_rel=L_ku_rel)
 
 if __name__ == '__main__':
-    c1a_stage.append(180.8988)
-    for i in range(1):
-        params_stage = CompressorStageParameters(
-            mode='tip',
-            D_const= D_tip,
-
-            alpha1_deg=alpha11_deg,
-            L_rel=L_stage_rel[i],
-            D_tip=D_tip,
-            efficiency=eff_stage[i],
-            eff_tip_rel=eff_rel[i],
-            reaction=reaction_stage[i],
-            c_1a=c1a_stage[i],
-            c_3a = c1a_stage[i+1],
-            h_rot_rel=h_rot_rel[i],
-            G=G,
-            d_hub_rel=d_hub_rel,
-            lambda_in=lambda_in,
-            u_tip=u_tip_1,
-            T_in=T_in,
-            p_in=p_in,
-            D_1mid=D_1mid_1,
-            D_1hub=D_1hub_1,
-            K_g = 0.96,
-            eff_rotor=0.93
-        )
-        com_stage = CompressorStage(params_stage)
-        com_stage.calculate()
+    pass
