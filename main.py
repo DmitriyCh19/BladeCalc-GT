@@ -5,9 +5,9 @@ from machine.compressor_stage import CompressorStageParameters, CompressorStage
 
 z = 9
 alpha11_deg = 60.546
-L_stage_rel = [0.24227, 0.252, 0.271, 0.281, 0.271, 0.261, 0.251, 0.241]
+L_stage_rel = [0.24227, 0.252, 0.262, 0.271, 0.281, 0.271, 0.261, 0.251, 0.241]
 D_tip = 0.5923
-eff_stage = [0.87, 0.89, 0.89, 0.9, 0.91, 0.9, 0.885, 0.885]
+eff_stage = [0.87, 0.89, 0.89, 0.9, 0.91, 0.91, 0.9, 0.885, 0.885]
 eff_rel = [1, 0.99, 0.98, 0.97, 0.96, 0.95, 0.94, 0.935, 0.93]
 reaction_stage = [0.5, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57]
 c1a_stage = [193.4903, 191.9, 190.3, 188.7, 187.2, 187.2, 185.6, 184.01, 182.4]
@@ -92,34 +92,44 @@ if __name__ == '__main__':
     print(z_hpc)
 
     c1a_stage.append(180.8988)
-    for i in range(1):
-        params_stage = CompressorStageParameters(
-            mode='tip',
-            D_const= D_tip,
 
-            alpha1_deg=alpha11_deg,
-            L_rel=L_stage_rel[i],
-            D_tip=D_tip,
-            efficiency=eff_stage[i],
-            eff_tip_rel=eff_rel[i],
-            reaction=reaction_stage[i],
-            c_1a=c1a_stage[i],
-            c_3a = c1a_stage[i+1],
-            h_rot_rel=h_rot_rel[i],
-            G=G,
-            d_hub_rel=d_hub_rel,
-            lambda_in=lambda_in,
-            u_tip=u_tip_1,
-            T_in=T_in,
-            p_in=p_in,
-            D_1mid=D_1mid_1,
-            D_1hub=D_1hub_1,
-            K_g = 0.96,
-            eff_rotor=0.93
-        )
-    
-    com_stage = CompressorStage(params_stage)
-    
-    com_stage.calculate()
-    
-    com_stage.print_stage_result()
+    stages_result = hpc.calculate_stages(
+        z=len(L_stage_rel),
+        alpha1_deg=alpha11_deg,
+        L_stage_rel=L_stage_rel,
+        eff_stage=eff_stage,
+        eff_rel=eff_rel,
+        reaction_stage=reaction_stage,
+        c1a_stage=c1a_stage,
+        h_rot_rel=h_rot_rel,
+
+        D_const=D_tip,
+        D_tip=D_tip,
+        G=G,
+        d_hub_rel=d_hub_rel,
+        lambda_in=lambda_in,
+        u_tip=u_tip_1,
+        T_in=T_in,
+        p_in=p_in,
+        D_1mid=D_1mid_1,
+        D_1hub=D_1hub_1,
+        K_g=0.96,
+        eff_rotor=0.93,
+        mode='tip',
+    )
+
+    for i, stage in enumerate(hpc.stage_results, start=1):
+        print(f'\nСтупень {i}')
+        print(f'T_in = {stage.thermodynamics.T_in:.2f} К')
+        print(f'T_out = {stage.thermodynamics.T_out:.2f} К')
+        print(f'p_in = {stage.thermodynamics.p_in:.0f} Па')
+        print(f'p_out = {stage.thermodynamics.p_out:.0f} Па')
+        print(f'pi_stage = {stage.thermodynamics.pi:.4f}')
+        print(f'Ротор = {stage.rotor}')
+        print(f'НА = {stage.stator}')
+
+    print('\nИтог по компрессору')
+    print(f'T_out = {stages_result.T_out:.2f} К')
+    print(f'p_out = {stages_result.p_out:.0f} Па')
+    print(f'pi_total = {stages_result.pi_total:.4f}')
+    print(f'L_total = {stages_result.L_total:.2f} Дж/кг')
