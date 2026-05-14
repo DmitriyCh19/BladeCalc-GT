@@ -5,7 +5,7 @@ from configs.constants import *
 from configs.modes import *
 from core.gas_func import velocity_critical, q_lambda, local_speed_velocity
 from core.geometry import area_calc, relative_diameter_hub, calculate_section_diameters
-from core.geometry_models import VelocityTriangle, RotorGeometry
+from core.geometry_models import VelocityTriangle, RotorGeometry, StatorGeometry
 
 @dataclass
 class CompressorStageParameters:
@@ -71,6 +71,10 @@ class CompressorStageResult:
     mach_2_abs: float
     F_inlet: float
     F_outlet: float
+    a_inlet: float
+    a_outlet: float
+
+    stator: StatorGeometry | None = None
 
 class CompressorStage:
     def __init__(self, params:CompressorStageParameters):
@@ -89,7 +93,7 @@ class CompressorStage:
     def calculate_rotor(self, thermo:StageThermodynamics):    
         L_ku = thermo.L_stage* self.params.eff_tip_rel
 
-        u_mid_in = self.params.u_tip * math.sqrt((1 + self.params.d_hub_rel ** 2) / 2)
+        # u_mid_in = self.params.u_tip * math.sqrt((1 + self.params.d_hub_rel ** 2) / 2)
         a_1crit = velocity_critical(k=K_AIR, R=R_AIR, T=thermo.T_in)
 
         # пропущенны пункты 9-10
@@ -126,7 +130,7 @@ class CompressorStage:
         rotor_solidity = 0.225 + 0.275 * J + 0.5 * J ** 2
 
         z_rotor = self.params.h_rot_rel * rotor_solidity * math.pi * stage_1.mid / h_1
-        z_rotor = math.ceil(z_rotor)
+        z_rotor = round(z_rotor)
         h_rot_rel = h_1 * z_rotor / (rotor_solidity * math.pi * stage_1.mid)
 
         rotor_blade_chord = h_1 / h_rot_rel
@@ -165,6 +169,9 @@ class CompressorStage:
 
         beta_2_rad = math.asin(self.outlet_triangle.c_a / self.outlet_triangle.w)
         self.outlet_triangle.beta_deg = math.degrees(beta_2_rad)
+
+        delta_beta = self.outlet_triangle.beta_deg - self.inlet_triangle.beta_deg
+
         self.rotor = RotorGeometry(inlet=stage_1, 
                               outlet=stage_2, 
                               blade_height_in=h_1,
@@ -180,7 +187,8 @@ class CompressorStage:
                                            flow_coefficient=flow_coefficient,
                                            J=J, lambda_1=inlet.lambda_1, lambda_2=lambda_2,
                                            mach_1_rel=mach_1, mach_2_abs=mach_2,
-                                           F_inlet=inlet.area, F_outlet=F_outlet)
+                                           F_inlet=inlet.area, F_outlet=F_outlet,
+                                           a_inlet=a_1, a_outlet=a_2)
 
     def print_stage_result(self) -> None:
         # print(f'u_mid = {u_mid}')
@@ -249,6 +257,28 @@ class CompressorStage:
             alpha_deg=alpha_deg
         )
         return InletSolution(area=F, u_mid=u_mid, lambda_1=lambda_1, L_ku_rel=L_ku_rel)
+    
+    def calculate_stator(self, alpha_out_deg: float):
+        delta_alpha = alpha_out_deg - self.outlet_triangle.alpha_deg
+
+        alpha_rel = (alpha_out_deg / 100)
+        delta_alpha_b_t = 0.037 + 0.1 * alpha_rel + 0.262 * alpha_rel ** 2
+
+        E = delta_alpha / 100 / delta_alpha_b_t
+        if E <= 1:
+            stator_solidity = 0.231 - 0.135 * E + 0.909 * E ** 2
+        else:
+            stator_solidity = 10 * (0.981 - 1.788 * E + 0.912 * E ** 2)
+        z_stator = self.params.h_rot_rel * stator_solidity * math.pi * self.rotor.outlet.mid / self.rotor.blade_height_out
+        z_stator = round(z_stator)
+        h_stat_rel = z_stator * self.rotor.blade_height_out / (stator_solidity * math.pi * self.rotor.outlet.mid)
+
+        stator_blade_chord = self.rotor.blade_height_out / h_stat_rel
+        self.stator = StatorGeometry(blade_chord=stator_blade_chord, blade_count=z_stator, solidity=stator_solidity)
+
+        self.stage.stator = self.stator
+
+
 
 if __name__ == '__main__':
     pass

@@ -36,3 +36,11 @@ class RotorGeometry:
     blade_count: int
 
     solidity: float
+    
+@dataclass
+class StatorGeometry:
+    blade_chord: float
+
+    blade_count: int
+
+    solidity: float
