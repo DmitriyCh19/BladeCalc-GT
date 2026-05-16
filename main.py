@@ -1,6 +1,7 @@
 from machine.hpt import HPTParameters, HighPressureTurbine
 from machine.hpc import HPCParameters, HighPressureCompressor
-from machine.compressor_stage import CompressorStageParameters, CompressorStage
+from machine.turbine_stage import TurbineStageParameters, TurbineStage
+from core.geometry_models import SectionDiameters
 
 
 z = 9
@@ -73,6 +74,32 @@ hpc_params = HPCParameters(
     G_cooling_rel=0.1
 )
 
+turbin_stage_par = TurbineStageParameters(
+    mode='mid',
+    G_in=66.496,
+    G_out=70.84,
+    h_2_rotor=0.0666,
+    u_mid=420.922,
+    inlet=SectionDiameters(hub=0.5919, mid=0.6338, tip=0.6731),
+    p_in=2199800,
+    pi=2.8739,
+    T_in=1665,
+    T_out=1327.36,
+    reaction=0.32,
+    y=0.445,
+    phi_cooling=0.965,
+    psi_cooling=0.95,
+    S_stator=0.0478,
+    S_rotor=0.0427,
+    D_hub_out=0.5632,
+    r_stator=0.015,
+    r_rotor=0.015,
+    r_rotor_colling=1.1,
+    r_stator_colling=0.95,
+    L_st=393673
+
+)
+
 if __name__ == '__main__':
     K_gg = 0.4
 
@@ -133,3 +160,8 @@ if __name__ == '__main__':
     print(f'p_out = {stages_result.p_out:.0f} Па')
     print(f'pi_total = {stages_result.pi_total:.4f}')
     print(f'L_total = {stages_result.L_total:.2f} Дж/кг')
+
+    print('========================================')
+
+    turb_stage = TurbineStage(params=turbin_stage_par)
+    turb_stage.calculate()
