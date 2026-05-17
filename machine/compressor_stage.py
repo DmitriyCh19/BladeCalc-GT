@@ -69,6 +69,14 @@ class CompressorStageResult:
     a_outlet: float
 
     stator: StatorGeometry | None = None
+    length: CompressorStageLength | None = None
+
+@dataclass
+class CompressorStageLength:
+    rotor: float
+    stator: float
+    gap: float
+    total: float
 
 class CompressorStage:
     def __init__(self, params:CompressorStageParameters):
@@ -183,31 +191,27 @@ class CompressorStage:
                                            mach_1_rel=mach_1, mach_2_abs=mach_2,
                                            F_inlet=inlet.area, F_outlet=F_outlet,
                                            a_inlet=a_1, a_outlet=a_2)
+        
+        self.stage.length = self.calculate_stage_length()
 
-    def print_stage_result(self) -> None:
-        # print(f'u_mid = {u_mid}')
-        # print(f'a_crit = {a_1crit}')
-        # print(f'lambda 1a = {lambda_1a}')
-        # print(f'q_lambda_a1 {q_lambda_1a}')
-        # print(f'u_mid = {u_mid}')
-        # print(f'коэфф расхода {flow_coefficient}')
-        # print(f'Диаметры на входе {stage_1}')
-        # print(f'высота лопатки РК {h_1}')
-        # print(f'скорость звука на входе {a_1}')
-        print(f'Треугольник скоростей вход {self.inlet_triangle}')
-        # print(f'безразмерный параметр J {J}')
-        # print(f'густота решетки РК {rotor_solidity}')
-        # print(f'число лопаток РК {z_rotor}')
-        # print(f'относительная высота рабочей лопатки {h_rot_rel}')
-        # print(f'хорда рабочих лопаток {rotor_blade_chord}')
-        # print(f'lamda 2 = {lambda_2}')
-        # print(f'скорость звука на выходе из РК {a_2}')
-        print(f'Треугольник выхода из РК {self.outlet_triangle}')
-        print(f'Геометрия ротора {self.rotor}')
-        # print(f'Площадь на выходе из РК {F_outlet}')
-        # print(f'относительный диаметр втулки на выходе из РК {d_2_hub_rel}')
-        # print(f'Диаметры на выходе из РК {stage_2}')
-        # print(f'высота лопатки на выходе из РК {h_2}')
+
+    def calculate_stage_length(self) -> CompressorStageLength:
+        if self.rotor is None:
+            raise ValueError("Перед расчётом длины ступени нужно рассчитать ротор.")
+
+        h = self.rotor.blade_height_out
+        h_rel = self.params.h_rot_rel
+
+        len_rotor = h / h_rel
+        len_stator = 0.9 * len_rotor
+        gap = 0.25 * len_rotor
+
+        return CompressorStageLength(
+            rotor=len_rotor,
+            stator=len_stator,
+            gap=gap,
+            total=len_rotor + len_stator + 2 * gap,
+        )
 
     def calculate_thermodynamics(self) -> StageThermodynamics:
         L_st = self.params.L_rel * self.params.u_tip ** 2

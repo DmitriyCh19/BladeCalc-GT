@@ -40,6 +40,7 @@ class HPCStagesResult:
 
     pi_total: float
     L_total: float
+    length_total: float
     checks: dict[str, float] | None = None
 
 
@@ -168,6 +169,7 @@ class HighPressureCompressor:
             p_current = stage_machine.stage.thermodynamics.p_out
 
         self.calculate_all_stators()
+        length_total = sum(stage.length.total for stage in self.stage_results if stage.length is not None)
 
         pi_total = 1.0
         L_total = 0.0
@@ -184,6 +186,7 @@ class HighPressureCompressor:
             p_out=self.stage_results[-1].thermodynamics.p_out,
             pi_total=pi_total,
             L_total=L_total,
+            length_total=length_total,
             checks=checks,
         )
 

@@ -32,6 +32,7 @@ class TurbineStageGeometryParams:
     mode: str
     inlet: SectionDiameters
     h_2_rotor: float
+    h_2_rotor_rel: float
 
 
 @dataclass
@@ -190,3 +191,11 @@ class TurbineStageResult:
     stator_grid: BladeRowGridParams
     rotor_grid: BladeRowGridParams
     solidity_hub_rotor: float
+    length: TurbineStageLength
+
+@dataclass
+class TurbineStageLength:
+    stator: float
+    rotor: float
+    gap: float
+    total: float

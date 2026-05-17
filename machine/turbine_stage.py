@@ -8,7 +8,8 @@ from machine.turbine_stage_models import (
     TurbineStageKinematicParams, TurbineStageGeometryParams, TurbineStageBladeRowsParams,
     BladeRowInput, TurbineStageWork, TurbineStatorOutlet, TurbineRotorOutlet,
     BladeRowGridParams, TurbineStageBladeRows, TurbineStageThermodynamics,
-    TurbineStageGeometry, TurbineStageLoading, TurbineStageVelocity, TurbineStageResult
+    TurbineStageGeometry, TurbineStageLoading, TurbineStageVelocity, TurbineStageResult,
+    TurbineStageLength
 )
 from core.gas_func import velocity_critical, pi_lambda, q_lambda
 from core.geometry import area_calc, calculate_section_diameters
@@ -32,7 +33,10 @@ class TurbineStage:
         rotor = self.calculate_rotor_outlet(flow=flow, thermo=thermo, kin=kin, geom=geom, work=work, stator=stator)
         blade_rows = self.calculate_blade_rows(geom=geom, rows=rows, kin=kin, stator=stator, rotor=rotor)
 
-        result = self.assemble_result(thermo=thermo, work=work, stator=stator, rotor=rotor, blade_rows=blade_rows)
+        length = self.calculate_stage_length(geom=geom)
+        result = self.assemble_result(
+            thermo=thermo, work=work, stator=stator,
+            rotor=rotor, blade_rows=blade_rows, length=length)
         self.result = result
         return result
 
@@ -182,6 +186,20 @@ class TurbineStage:
             K_stator=K_stator, K_rotor=K_rotor, solidity_hub_rotor=solidity_hub_rotor
         )
 
+    def calculate_stage_length(self, geom: TurbineStageGeometryParams) -> TurbineStageLength:
+        K = 0.6
+        len_rotor = K * geom.h_2_rotor_rel * geom.h_2_rotor
+        len_stator = 1.15 * len_rotor
+        gap = 0.15 * len_rotor
+
+
+        return TurbineStageLength(
+            stator=len_stator,
+            rotor=len_rotor,
+            gap=gap,
+            total=len_stator + len_rotor + 2*gap,
+        )
+        
     def blade_row_grid_params(
         self, row: BladeRowInput, D_mean: float, K: float,
         delta_angle_deg: float, lambda_value: float, gamma_angle_deg: float
@@ -227,7 +245,7 @@ class TurbineStage:
     def assemble_result(
         self, thermo: TurbineStageThermoParams, work: TurbineStageWork,
         stator: TurbineStatorOutlet, rotor: TurbineRotorOutlet,
-        blade_rows: TurbineStageBladeRows
+        blade_rows: TurbineStageBladeRows, length: TurbineStageLength,
     ) -> TurbineStageResult:
         geom = self.params.geometry
         kin = self.params.kinematics
@@ -263,6 +281,6 @@ class TurbineStage:
         return TurbineStageResult(
             thermodynamics=thermodynamics, geometry=geometry, velocity=velocity,
             loading=loading, stator_grid=blade_rows.stator_grid,
-            rotor_grid=blade_rows.rotor_grid,
-            solidity_hub_rotor=blade_rows.solidity_hub_rotor
+            rotor_grid=blade_rows.rotor_grid, length=length,
+            solidity_hub_rotor=blade_rows.solidity_hub_rotor,
         )

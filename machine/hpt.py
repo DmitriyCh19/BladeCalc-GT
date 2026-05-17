@@ -64,6 +64,7 @@ class HPTStagesResult:
     p_out: float
     pi_total: float
     L_total: float
+    length_total: float
     checks: dict[str, float]
 
 class HighPressureTurbine:
@@ -186,6 +187,7 @@ class HighPressureTurbine:
             raise ValueError(f"{z} > 2 WIP")
 
         h_2_rotor = self._get_stage_rotor_out_heights()
+        h_2_rotor_rel = self._get_stage_rotor_out_height_rels()
 
         self._check_stage_input_lengths(
             z=z, L_stage=L_stage, eff_stage=eff_stage, reaction_stage=reaction_stage,
@@ -230,7 +232,8 @@ class HighPressureTurbine:
                     phi_cooling=phi_stage[i], psi_cooling=psi_stage[i]
                 ),
                 geometry=TurbineStageGeometryParams(
-                    mode=self.params.mode, inlet=inlet_current, h_2_rotor=h_2_rotor[i]
+                    mode=self.params.mode,inlet=inlet_current,
+                    h_2_rotor=h_2_rotor[i],h_2_rotor_rel=h_2_rotor_rel[i],
                 ),
                 blade_rows=TurbineStageBladeRowsParams(
                     stator=BladeRowInput(
@@ -257,6 +260,7 @@ class HighPressureTurbine:
             G_current = G_out_current
             inlet_current = stage_result.geometry.rotor_outlet
 
+        length_total = sum(stage.length.total for stage in self.stage_results)
         checks = self.check_stage_outlet_match()
 
         self.stages_result = HPTStagesResult(
@@ -265,10 +269,17 @@ class HighPressureTurbine:
             p_out=self.stage_results[-1].thermodynamics.p_out,
             pi_total=self.params.p_gas / self.stage_results[-1].thermodynamics.p_out,
             L_total=sum(stage.thermodynamics.L_stage for stage in self.stage_results),
-            checks=checks,
+            length_total=length_total, checks=checks,
         )
 
         return self.stages_result
+    
+    def _get_stage_rotor_out_height_rels(self) -> list[float]:
+        if self.params.z == 1:
+            return [self.blade_height_out_rel]
+        if self.params.z == 2:
+            return [self.blade_height_1_rel, self.blade_height_out_rel]
+        raise ValueError(f"{self.params.z} > 2 WIP")
     
     def _get_stage_rotor_out_heights(self) -> list[float]:
         if self.params.z == 1:
