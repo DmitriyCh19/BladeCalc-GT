@@ -89,9 +89,9 @@ class TurbineStatorOutlet:
 class TurbineRotorOutlet:
     triangle: VelocityTriangle
     T_relative_in: float
-    T_static: float
+    T_total: float
     p_relative_out: float
-    p_static: float
+    p_total: float
     lambda_w2: float
     lambda_c2: float
     q_lambda_w2: float

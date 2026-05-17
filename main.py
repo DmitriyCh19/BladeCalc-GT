@@ -196,3 +196,36 @@ if __name__ == '__main__':
     print(f'СА: z = {turb_result.stator_grid.blade_count}, b = {turb_result.stator_grid.blade_chord:.5f} м, σ = {turb_result.stator_grid.solidity:.4f}')
     print(f'РК: z = {turb_result.rotor_grid.blade_count}, b = {turb_result.rotor_grid.blade_chord:.5f} м, σ = {turb_result.rotor_grid.solidity:.4f}')
     print('=' * 60)
+
+    hpt_stages = hpt.calculate_stages(
+    L_stage=[393673],
+    reaction_stage=[0.32],
+    stator_axial_chord=[0.0478],
+    rotor_axial_chord=[0.0427],
+    stator_trailing_edge_radius_rel=[0.015],
+    rotor_trailing_edge_radius_rel=[0.015],
+    cooling_rel_stage=[0.06],
+    y_stage=[0.445],
+    phi_stage=[0.965],
+    psi_stage=[0.95],
+    stator_cooling_pitch_factor=[0.95],
+    rotor_cooling_pitch_factor=[1.1],
+    )
+
+    print('\nИтог по ТВД')
+    print(f'T_out = {hpt_stages.T_out:.2f} К')
+    print(f'p_out = {hpt_stages.p_out:.0f} Па')
+    print(f'pi_total = {hpt_stages.pi_total:.4f}')
+    print(f'L_total = {hpt_stages.L_total:.2f} Дж/кг')
+
+    for i, stage in enumerate(hpt_stages.stages, start=1):
+        print(f'\nСтупень турбины {i}')
+        print(f'T_in / T_out = {stage.thermodynamics.T_in:.2f} / {stage.thermodynamics.T_2:.2f} К')
+        print(f'p_in / p_out = {stage.thermodynamics.p_in:.0f} / {stage.thermodynamics.p_out:.0f} Па')
+        print(f'α1 / β1 = {stage.velocity.stator_outlet.alpha_deg:.2f} / {stage.velocity.stator_outlet.beta_deg:.2f} град')
+        print(f'α2 / β2 = {stage.velocity.rotor_outlet.alpha_deg:.2f} / {stage.velocity.rotor_outlet.beta_deg:.2f} град')
+        print(f'СА: z = {stage.stator_grid.blade_count}, РК: z = {stage.rotor_grid.blade_count}')
+        
+    print('\nКонтроль совпадения выхода ТВД и последней ступени')
+    for name, value in hpt_stages.checks.items():
+        print(f'{name}: {value:.4f} %')

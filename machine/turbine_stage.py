@@ -140,8 +140,8 @@ class TurbineStage:
         )
 
         return TurbineRotorOutlet(
-            triangle=triangle, T_relative_in=T_w1, T_static=T_2, p_relative_out=p_w2,
-            p_static=p_2, lambda_w2=lambda_w2, lambda_c2=lambda_c2,
+            triangle=triangle, T_relative_in=T_w1, T_total=T_2, p_relative_out=p_w2,
+            p_total=p_2, lambda_w2=lambda_w2, lambda_c2=lambda_c2,
             q_lambda_w2=q_lambda_w2, q_lambda_2=q_lambda_2, area=F_2, section=section_2
         )
 
@@ -232,9 +232,9 @@ class TurbineStage:
         thermodynamics = TurbineStageThermodynamics(
             L_ad=work.L_ad, L_ad_stator=work.L_ad_stator, L_ad_rotor=work.L_ad_rotor,
             L_stage=work.L_stage, T_in=thermo.T_in, T_1=stator.T_static,
-            T_w1=rotor.T_relative_in, T_2=rotor.T_static, T_out_target=thermo.T_out,
+            T_w1=rotor.T_relative_in, T_2=rotor.T_total, T_out_target=thermo.T_out,
             p_in=thermo.p_in, p_1_static=stator.p_static, p_2_static=work.p_2_static_ad,
-            p_w2=rotor.p_relative_out, p_out=rotor.p_static, pi_stage=thermo.pi
+            p_w2=rotor.p_relative_out, p_out=rotor.p_total, pi_stage=thermo.pi
         )
 
         geometry = TurbineStageGeometry(
