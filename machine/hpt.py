@@ -164,6 +164,7 @@ class HighPressureTurbine:
     def calculate_stages(
         self, *,
         L_stage: list[float],
+        eff_stage: list[float],
         reaction_stage: list[float],
         stator_axial_chord: list[float],
         rotor_axial_chord: list[float],
@@ -187,7 +188,7 @@ class HighPressureTurbine:
         h_2_rotor = self._get_stage_rotor_out_heights()
 
         self._check_stage_input_lengths(
-            z=z, L_stage=L_stage, reaction_stage=reaction_stage,
+            z=z, L_stage=L_stage, eff_stage=eff_stage, reaction_stage=reaction_stage,
             stator_axial_chord=stator_axial_chord, rotor_axial_chord=rotor_axial_chord,
             stator_trailing_edge_radius_rel=stator_trailing_edge_radius_rel,
             rotor_trailing_edge_radius_rel=rotor_trailing_edge_radius_rel,
@@ -221,10 +222,11 @@ class HighPressureTurbine:
                 flow=TurbineStageFlowParams(G_in=G_current, G_out=G_out_current),
                 thermo=TurbineStageThermoParams(
                     p_in=p_current, pi=pi_stage[i], T_in=T_current,
-                    T_out=T_out_target, L_stage=L_stage[i]
+                    T_out=T_out_target, L_stage=L_stage[i],
+                    efficiency=eff_stage[i]
                 ),
                 kinematics=TurbineStageKinematicParams(
-                    u_mid=self.u_mid, y=y_stage[i], reaction=reaction_stage[i],
+                    u_mid=self.u_mid, reaction=reaction_stage[i],
                     phi_cooling=phi_stage[i], psi_cooling=psi_stage[i]
                 ),
                 geometry=TurbineStageGeometryParams(
@@ -300,12 +302,13 @@ class HighPressureTurbine:
     def _check_stage_input_lengths(
         *, z: int, L_stage: list[float], reaction_stage: list[float],
         stator_axial_chord: list[float], rotor_axial_chord: list[float],
-        stator_trailing_edge_radius_rel: list[float],
+        stator_trailing_edge_radius_rel: list[float], eff_stage: list[float],
         rotor_trailing_edge_radius_rel: list[float],
         cooling_rel_stage: list[float],
     ) -> None:
         arrays = {
             "L_stage": L_stage,
+            "eff_stage": eff_stage,
             "reaction_stage": reaction_stage,
             "stator_axial_chord": stator_axial_chord,
             "rotor_axial_chord": rotor_axial_chord,

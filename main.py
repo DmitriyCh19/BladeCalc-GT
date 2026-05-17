@@ -1,9 +1,6 @@
 from machine.hpt import HPTParameters, HighPressureTurbine
 from machine.hpc import HPCParameters, HighPressureCompressor
-from machine.turbine_stage import TurbineStage
-from machine.turbine_stage_models import (TurbineStageParameters, BladeRowInput, TurbineStageBladeRowsParams, 
-TurbineStageFlowParams, TurbineStageGeometryParams, TurbineStageKinematicParams, TurbineStageThermoParams)
-from core.geometry_models import SectionDiameters
+
 
 
 z = 9
@@ -74,43 +71,6 @@ hpc_params = HPCParameters(
     G_cooling_rel=0.1
 )
 
-turbin_stage_par = TurbineStageParameters(
-    flow=TurbineStageFlowParams(
-        G_in=66.496,
-        G_out=70.84,
-    ),
-    thermo=TurbineStageThermoParams(
-        p_in=2199800,
-        pi=2.8739,
-        T_in=1665,
-        T_out=1327.36,
-        L_stage=393673,
-    ),
-    kinematics=TurbineStageKinematicParams(
-        u_mid=420.922,
-        y=0.445,
-        reaction=0.32,
-        phi_cooling=0.965,
-        psi_cooling=0.95,
-    ),
-    geometry=TurbineStageGeometryParams(
-        mode='mid',
-        inlet=SectionDiameters(hub=0.5919, mid=0.6338, tip=0.6731),
-        h_2_rotor=0.0666,
-    ),
-    blade_rows=TurbineStageBladeRowsParams(
-        stator=BladeRowInput(
-            axial_chord=0.0478,
-            trailing_edge_radius_rel=0.015,
-            cooling_pitch_factor=0.95,
-        ),
-        rotor=BladeRowInput(
-            axial_chord=0.0427,
-            trailing_edge_radius_rel=0.015,
-            cooling_pitch_factor=1.1,
-        ),
-    ),
-)
 
 if __name__ == '__main__':
     K_gg = 0.4
@@ -163,33 +123,16 @@ if __name__ == '__main__':
 
     print('========================================')
 
-    turb_stage = TurbineStage(params=turbin_stage_par)
-    turb_result = turb_stage.calculate()
-
-    print('\n' + '=' * 60)
-    print('КОНТРОЛЬ РАСЧЁТА СТУПЕНИ ТУРБИНЫ')
-    print('=' * 60)
-
-    print(f'Lад = {turb_result.thermodynamics.L_ad:.2f} Дж/кг')
-    print(f'T2 расчётная / заданная = {turb_result.thermodynamics.T_2:.2f} / {turb_result.thermodynamics.T_out_target:.2f} К')
-    print(f'p2 расчётное = {turb_result.thermodynamics.p_out:.0f} Па')
-    print(f'α1 / β1 = {turb_result.velocity.stator_outlet.alpha_deg:.2f} / {turb_result.velocity.stator_outlet.beta_deg:.2f} град')
-    print(f'α2 / β2 = {turb_result.velocity.rotor_outlet.alpha_deg:.2f} / {turb_result.velocity.rotor_outlet.beta_deg:.2f} град')
-    print(f'F1 / F2 = {turb_result.geometry.F_1:.5f} / {turb_result.geometry.F_2:.5f} м²')
-    print(f'ρ ср / ρ втулки = {turb_result.loading.reaction_mean:.4f} / {turb_result.loading.reaction_hub:.4f}')
-    print(f'СА: z = {turb_result.stator_grid.blade_count}, b = {turb_result.stator_grid.blade_chord:.5f} м, σ = {turb_result.stator_grid.solidity:.4f}')
-    print(f'РК: z = {turb_result.rotor_grid.blade_count}, b = {turb_result.rotor_grid.blade_chord:.5f} м, σ = {turb_result.rotor_grid.solidity:.4f}')
-    print('=' * 60)
 
     hpt_stages = hpt.calculate_stages(
     L_stage=[393673],
+    eff_stage=[0.88],
     reaction_stage=[0.32],
     stator_axial_chord=[0.0478],
     rotor_axial_chord=[0.0427],
     stator_trailing_edge_radius_rel=[0.015],
     rotor_trailing_edge_radius_rel=[0.015],
     cooling_rel_stage=[0.06],
-    y_stage=[0.445],
     phi_stage=[0.965],
     psi_stage=[0.95],
     stator_cooling_pitch_factor=[0.95],
@@ -209,6 +152,7 @@ if __name__ == '__main__':
         print(f'α1 / β1 = {stage.velocity.stator_outlet.alpha_deg:.2f} / {stage.velocity.stator_outlet.beta_deg:.2f} град')
         print(f'α2 / β2 = {stage.velocity.rotor_outlet.alpha_deg:.2f} / {stage.velocity.rotor_outlet.beta_deg:.2f} град')
         print(f'СА: z = {stage.stator_grid.blade_count}, РК: z = {stage.rotor_grid.blade_count}')
+        print(f'y = {stage.velocity.y:.4f}')
 
     print('\nКонтроль совпадения выхода КВД и последней ступени')
     for name, value in stages_result.checks.items():

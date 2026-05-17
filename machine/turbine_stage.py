@@ -37,8 +37,11 @@ class TurbineStage:
         return result
 
     def calculate_stage_work(self, thermo: TurbineStageThermoParams, kin: TurbineStageKinematicParams) -> TurbineStageWork:
-        L_ad = 0.5 * (kin.u_mid / kin.y) ** 2
-        c_ad = 1.415 * math.sqrt(L_ad)
+        if not 0 < thermo.efficiency <= 1:
+            raise ValueError(f"КПД ступени должен быть в диапазоне (0; 1], получено {thermo.efficiency}")
+
+        L_ad = thermo.L_stage / thermo.efficiency
+        c_ad = math.sqrt(2 * L_ad)
         a_crit_in = velocity_critical(k=K_GAS, R=R_GAS, T=thermo.T_in)
         lambda_ad = c_ad / a_crit_in
         pi_lambda_ad = pi_lambda(lam=lambda_ad, k=K_GAS)
@@ -124,7 +127,7 @@ class TurbineStage:
         alpha_2_rad = math.asin(w_2 * math.sin(beta_2_rad) / c_2)
         alpha_2_deg = math.degrees(alpha_2_rad)
 
-        T_2 = thermo.T_in - thermo.L_stage / cp_gas
+        T_2 = T_2 = thermo.T_in - work.L_stage / cp_gas
         a_2crit = velocity_critical(k=K_GAS, R=R_GAS, T=T_2)
         lambda_c2 = c_2 / a_2crit
         pi_lambda_c2 = pi_lambda(lam=lambda_c2, k=K_GAS)
@@ -252,9 +255,9 @@ class TurbineStage:
 
         velocity = TurbineStageVelocity(
             stator_outlet=stator.triangle, rotor_outlet=rotor.triangle,
-            c_ad=work.c_ad, lambda_ad=work.lambda_ad, lambda_1=stator.lambda_1,
-            lambda_1t=stator.lambda_1t, lambda_w2=rotor.lambda_w2,
-            lambda_c2=rotor.lambda_c2
+            c_ad=work.c_ad, lambda_ad=work.lambda_ad, y=work.y,
+            lambda_1=stator.lambda_1, lambda_1t=stator.lambda_1t,
+            lambda_w2=rotor.lambda_w2, lambda_c2=rotor.lambda_c2
         )
 
         return TurbineStageResult(

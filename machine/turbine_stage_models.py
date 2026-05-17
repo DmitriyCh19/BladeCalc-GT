@@ -16,12 +16,12 @@ class TurbineStageThermoParams:
     T_in: float
     T_out: float
     L_stage: float
+    efficiency: float
 
 
 @dataclass
 class TurbineStageKinematicParams:
     u_mid: float
-    y: float
     reaction: float
     phi_cooling: float = 1.0
     psi_cooling: float = 1.0
@@ -173,6 +173,7 @@ class TurbineStageVelocity:
     stator_outlet: VelocityTriangle
     rotor_outlet: VelocityTriangle
     c_ad: float
+    y: float
     lambda_ad: float
     lambda_1: float
     lambda_1t: float
