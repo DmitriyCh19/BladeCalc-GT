@@ -7,7 +7,6 @@ from core.geometry_models import SectionDiameters
 
 
 z = 9
-alpha11_deg = 60.546
 L_stage_rel = [0.24227, 0.252, 0.262, 0.271, 0.281, 0.271, 0.261, 0.251, 0.241]
 D_tip = 0.5923
 eff_stage = [0.87, 0.89, 0.89, 0.9, 0.91, 0.91, 0.9, 0.885, 0.885]
@@ -23,8 +22,7 @@ n = 12692
 T_in = 437.9788
 p_in = 355623
 pi = 6.58
-D_1mid_1 = 0.521
-D_1hub_1 = 0.4383
+
 
 hpt_params = HPTParameters(
     mode='mid',
@@ -138,27 +136,13 @@ if __name__ == '__main__':
 
     stages_result = hpc.calculate_stages(
         z=len(L_stage_rel),
-        alpha1_deg=alpha11_deg,
         L_stage_rel=L_stage_rel,
         eff_stage=eff_stage,
         eff_rel=eff_rel,
         reaction_stage=reaction_stage,
         c1a_stage=c1a_stage,
         h_rot_rel=h_rot_rel,
-
-        D_const=D_tip,
-        D_tip=D_tip,
-        G=G,
-        d_hub_rel=d_hub_rel,
-        lambda_in=lambda_in,
-        u_tip=u_tip_1,
-        T_in=T_in,
-        p_in=p_in,
-        D_1mid=D_1mid_1,
-        D_1hub=D_1hub_1,
-        K_g=0.96,
         eff_rotor=0.93,
-        mode='tip',
     )
 
     for i, stage in enumerate(hpc.stage_results, start=1):
@@ -225,7 +209,11 @@ if __name__ == '__main__':
         print(f'α1 / β1 = {stage.velocity.stator_outlet.alpha_deg:.2f} / {stage.velocity.stator_outlet.beta_deg:.2f} град')
         print(f'α2 / β2 = {stage.velocity.rotor_outlet.alpha_deg:.2f} / {stage.velocity.rotor_outlet.beta_deg:.2f} град')
         print(f'СА: z = {stage.stator_grid.blade_count}, РК: z = {stage.rotor_grid.blade_count}')
-        
+
+    print('\nКонтроль совпадения выхода КВД и последней ступени')
+    for name, value in stages_result.checks.items():
+        print(f'{name}: {value:.4f} %')
+
     print('\nКонтроль совпадения выхода ТВД и последней ступени')
     for name, value in hpt_stages.checks.items():
         print(f'{name}: {value:.4f} %')

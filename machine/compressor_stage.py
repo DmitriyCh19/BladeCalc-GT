@@ -12,9 +12,7 @@ class CompressorStageParameters:
     mode: str
     D_const: float
 
-    alpha1_deg: float
     L_rel: float
-    D_tip: float
     efficiency: float
     eff_tip_rel: float
     reaction: float
@@ -22,13 +20,9 @@ class CompressorStageParameters:
     c_3a: float
     h_rot_rel: float
     G: float
-    d_hub_rel: float
-    lambda_in: float
     u_tip: float
     T_in: float
     p_in: float
-    D_1mid: float
-    D_1hub: float
     K_g: float
     eff_rotor: float
 

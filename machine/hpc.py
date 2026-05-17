@@ -40,6 +40,7 @@ class HPCStagesResult:
 
     pi_total: float
     L_total: float
+    checks: dict[str, float] | None = None
 
 
 class HighPressureCompressor:
@@ -54,6 +55,7 @@ class HighPressureCompressor:
         self.h_blade_out = None
 
         self.D_mean = None
+        self.F_out = None
 
         self.stage_machines = []
         self.stage_results = []
@@ -65,7 +67,10 @@ class HighPressureCompressor:
 
         q_lambda_out_hpc = q_lambda(lam=self.params.lambda_out, k=K_AIR)
         q_lambda_in_hpc = q_lambda(lam=self.params.lambda_in, k=K_AIR)
-        F_out = area_calc(G=(self.params.G_in - self.params.G_cooling_rel * self.params.G_in), T=self.params.T_out, s=S_AIR, p=self.params.p_out, q=(q_lambda_out_hpc * self.params.K_g))
+
+        G_out = self.params.G_in * (1 - self.params.G_cooling_rel)
+        F_out = area_calc(G=G_out, T=self.params.T_out, s=S_AIR, p=self.params.p_out, q=q_lambda_out_hpc * self.params.K_g)
+        self.F_out = F_out
 
         politropa = polotrop(pi=self.params.pi, T_in=self.params.T_in, T_out=self.params.T_out)
 
@@ -99,88 +104,37 @@ class HighPressureCompressor:
             inlet=hpc_in,
             outlet=hpc_out
         )
+
     def calculate_stages(
-            self,
-            *,
-            alpha1_deg: float,
-            L_stage_rel: list[float],
-            eff_stage: list[float],
-            eff_rel: list[float],
-            reaction_stage: list[float],
-            c1a_stage: list[float],
-            h_rot_rel: list[float],
-            p_in: float,
-            D_const: float | None = None,
-            D_tip: float | None = None,
-            G: float | None = None,
-            d_hub_rel: float | None = None,
-            lambda_in: float | None = None,
-            u_tip: float | None = None,
-            T_in: float | None = None,
-            D_1mid: float | None = None,
-            D_1hub: float | None = None,
-            K_g: float | None = None,
-            eff_rotor: float = 0.93,
-            mode: str | None = None,
-            z: int | None = None,
+        self, *,
+        L_stage_rel: list[float],
+        eff_stage: list[float],
+        eff_rel: list[float],
+        reaction_stage: list[float],
+        c1a_stage: list[float],
+        h_rot_rel: list[float],
+        eff_rotor: float = 0.93,
+        z: int | None = None,
     ) -> HPCStagesResult:
-        """
-        Последовательный расчёт всех ступеней компрессора.
-
-        На вход первой ступени подаются T_in и p_in.
-        Для каждой следующей ступени:
-            T_in = T_out предыдущей ступени,
-            p_in = p_out предыдущей ступени.
-
-        После расчёта рабочих колёс выполняется расчёт направляющих аппаратов
-        между соседними ступенями.
-        """
-
         if z is None:
             z = len(L_stage_rel)
 
+        if self.geometry is None or self.u_tip_in is None:
+            raise ValueError("Перед calculate_stages() нужно вызвать hpc.calculate(n).")
+
         self._check_stage_input_lengths(
-            z=z,
-            L_stage_rel=L_stage_rel,
-            eff_stage=eff_stage,
-            eff_rel=eff_rel,
-            reaction_stage=reaction_stage,
-            c1a_stage=c1a_stage,
-            h_rot_rel=h_rot_rel,
+            z=z, L_stage_rel=L_stage_rel, eff_stage=eff_stage,
+            eff_rel=eff_rel, reaction_stage=reaction_stage,
+            c1a_stage=c1a_stage, h_rot_rel=h_rot_rel,
         )
 
-        mode = self.params.mode if mode is None else mode
-        G = self.params.G_in if G is None else G
-        d_hub_rel = self.params.d_hub_in_rel if d_hub_rel is None else d_hub_rel
-        lambda_in = self.params.lambda_in if lambda_in is None else lambda_in
-        K_g = self.params.K_g if K_g is None else K_g
-        T_current = self.params.T_in if T_in is None else T_in
-        p_current = p_in
-
-        if D_const is None:
-            if self.geometry is None:
-                raise ValueError(
-                    "D_const не задан, а self.geometry ещё не рассчитана. "
-                    "Сначала нужно вызвать hpc.calculate(n) или явно передать D_const."
-                )
-            D_const = getattr(self.geometry.inlet, mode)
-
-        if D_tip is None:
-            D_tip = D_const
-
-        if u_tip is None:
-            if self.u_tip_in is None:
-                raise ValueError(
-                    "u_tip не задан, а self.u_tip_in ещё не рассчитан. "
-                    "Сначала нужно вызвать hpc.calculate(n) или явно передать u_tip."
-                )
-            u_tip = self.u_tip_in
-
-        if D_1mid is None:
-            D_1mid = self.geometry.inlet.mid if self.geometry is not None else 0.0
-
-        if D_1hub is None:
-            D_1hub = self.geometry.inlet.hub if self.geometry is not None else 0.0
+        mode = self.params.mode
+        D_const = getattr(self.geometry.inlet, mode)
+        G = self.params.G_in
+        u_tip = self.u_tip_in
+        T_current = self.params.T_in
+        p_current = self.params.p_out / self.params.pi
+        K_g = self.params.K_g
 
         self.stage_machines = []
         self.stage_results = []
@@ -189,10 +143,7 @@ class HighPressureCompressor:
             params_stage = CompressorStageParameters(
                 mode=mode,
                 D_const=D_const,
-
-                alpha1_deg=alpha1_deg,
                 L_rel=L_stage_rel[i],
-                D_tip=D_tip,
                 efficiency=eff_stage[i],
                 eff_tip_rel=eff_rel[i],
                 reaction=reaction_stage[i],
@@ -200,13 +151,9 @@ class HighPressureCompressor:
                 c_3a=c1a_stage[i + 1],
                 h_rot_rel=h_rot_rel[i],
                 G=G,
-                d_hub_rel=d_hub_rel,
-                lambda_in=lambda_in,
                 u_tip=u_tip,
                 T_in=T_current,
                 p_in=p_current,
-                D_1mid=D_1mid,
-                D_1hub=D_1hub,
                 K_g=K_g,
                 eff_rotor=eff_rotor,
             )
@@ -229,12 +176,15 @@ class HighPressureCompressor:
             pi_total *= stage.thermodynamics.pi
             L_total += stage.thermodynamics.L_stage
 
+        checks = self.check_stage_outlet_match()
+
         self.stages_result = HPCStagesResult(
             stages=self.stage_results,
             T_out=self.stage_results[-1].thermodynamics.T_out,
             p_out=self.stage_results[-1].thermodynamics.p_out,
             pi_total=pi_total,
             L_total=L_total,
+            checks=checks,
         )
 
         return self.stages_result
@@ -267,14 +217,14 @@ class HighPressureCompressor:
 
     @staticmethod
     def _check_stage_input_lengths(
-            *,
-            z: int,
-            L_stage_rel: list[float],
-            eff_stage: list[float],
-            eff_rel: list[float],
-            reaction_stage: list[float],
-            c1a_stage: list[float],
-            h_rot_rel: list[float],
+        *,
+        z: int,
+        L_stage_rel: list[float],
+        eff_stage: list[float],
+        eff_rel: list[float],
+        reaction_stage: list[float],
+        c1a_stage: list[float],
+        h_rot_rel: list[float],
     ) -> None:
         arrays = {
             "L_stage_rel": L_stage_rel,
@@ -286,16 +236,33 @@ class HighPressureCompressor:
 
         for name, values in arrays.items():
             if len(values) < z:
-                raise ValueError(
-                    f"Массив {name} содержит {len(values)} элементов, "
-                    f"а требуется минимум {z}."
-                )
+                raise ValueError(f"Массив {name} содержит {len(values)} элементов, а требуется минимум {z}.")
 
         if len(c1a_stage) < z + 1:
             raise ValueError(
                 f"Массив c1a_stage содержит {len(c1a_stage)} элементов, "
-                f"а требуется минимум {z + 1}, потому что для каждой ступени "
-                f"используются c1a_stage[i] и c1a_stage[i + 1]."
+                f"а требуется минимум {z + 1}, потому что используются c1a_stage[i] и c1a_stage[i + 1]."
             )
 
+    def check_stage_outlet_match(self) -> dict[str, float]:
+        if not self.stage_results:
+            raise ValueError("Нет рассчитанных ступеней КВД.")
+        if self.geometry is None or self.F_out is None:
+            raise ValueError("Перед проверкой нужно вызвать hpc.calculate(n).")
 
+        def rel_error_percent(calc: float, ref: float) -> float:
+            if abs(ref) < 1e-12:
+                return 0.0 if abs(calc) < 1e-12 else float("inf")
+            return (calc - ref) / ref * 100
+
+        last = self.stage_results[-1]
+
+        return {
+            "dT_out_%": rel_error_percent(last.thermodynamics.T_out, self.params.T_out),
+            "dp_out_%": rel_error_percent(last.thermodynamics.p_out, self.params.p_out),
+            "dF_out_%": rel_error_percent(last.F_outlet, self.F_out),
+            "dh_blade_out_%": rel_error_percent(last.rotor.blade_height_out, self.h_blade_out),
+            "dD_hub_out_%": rel_error_percent(last.rotor.outlet.hub, self.geometry.outlet.hub),
+            "dD_mid_out_%": rel_error_percent(last.rotor.outlet.mid, self.geometry.outlet.mid),
+            "dD_tip_out_%": rel_error_percent(last.rotor.outlet.tip, self.geometry.outlet.tip),
+        }
