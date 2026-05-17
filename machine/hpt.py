@@ -75,20 +75,33 @@ class HighPressureTurbine:
         # температура лопатки ТВД
         T_blade = 0.95 * (self.params.T_out + self.u_mid ** 2 / (R_GAS * 2 * K_GAS / (K_GAS - 1))) # заменить комплекс на переменную теплоёмкость
         self.T_blade_cooling = T_blade / 0.95 - self.params.theta * (T_blade / 0.95 - self.params.T_cooling_air)
-
-        # относительная высота лопатки ТВД
-        self.blade_height_rel = (2 * (self.u_mid ** 2) * self.params.density * self.params.blade_force_coeff * self.params.k_sigma
-                            ) / (self.params.sigma_allow* 1e6)
         
         q_lambda_2 = q_lambda(lam=self.params.lambda_2, k=K_GAS) # заменить k
         alpha_2_rad = math.radians(self.params.alpha_2_deg)
         F_out = area_calc(G=(self.params.G_in + self.params.G_cooling_rel * self.params.G_hpc_in),
                                T=self.params.T_out, s=S_GAS, p=self.params.p_out, q=(q_lambda_2 * math.sin(alpha_2_rad)))
         
-        self.h_blade_out = math.sqrt(F_out / (math.pi * self.blade_height_rel))
+        if self.params.z == 1:
+            self.blade_height_out_rel = (2 * (self.u_mid ** 2) * self.params.density * self.params.blade_force_coeff * self.params.k_sigma
+                            ) / (self.params.sigma_allow* 1e6)
+            self.h_blade_out = math.sqrt(F_out / (math.pi * self.blade_height_out_rel))
+        elif self.params.z == 2:
+            sigma_r_1 = 0.85 * self.params.sigma_allow / self.params.k_sigma
+            k_sigma_1 = self.params.sigma_allow / sigma_r_1
+            if k_sigma_1 >= 2 and k_sigma_1 <= 1.8:
+                ValueError(f"recomend change params: 1.8 <= {k_sigma_1} <= 2.0")
+            self.blade_height_out_rel = (2 * (self.u_mid ** 2) * self.params.density * self.params.blade_force_coeff * self.params.k_sigma
+                            ) / (self.params.sigma_allow* 1e6)
+            self.h_blade_out = math.sqrt(F_out / (math.pi * self.blade_height_out_rel))
+            self.blade_height_1_rel = (2 * (self.u_mid ** 2) * self.params.density * self.params.blade_force_coeff * k_sigma_1
+                            ) / (self.params.sigma_allow* 1e6)
+            self.h_blade_1 = self.h_blade_out * 0.85
+            self.F_1_out = self.h_blade_1 * math.pi * self.blade_height_1_rel
+        else:  
+            raise ValueError(f"{self.params.z} > 2 WIP")
 
         hpt_out = calculate_section_diameters(
-            D_ref=self.h_blade_out * self.blade_height_rel,
+            D_ref=self.h_blade_out * self.blade_height_out_rel,
             F=F_out,
             mode_name='mid',
             MODES_D=MODES_D
