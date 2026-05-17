@@ -1,5 +1,7 @@
 from machine.hpt import HPTParameters, HighPressureTurbine
 from machine.hpc import HPCParameters, HighPressureCompressor
+from visualization.flowpath_builders import build_hpc_flowpath_data, build_hpt_flowpath_data
+from visualization.flowpath_plot import plot_machine_flowpath
 
 hpt_params = HPTParameters(
     mode='mid',
@@ -157,3 +159,11 @@ if __name__ == '__main__':
     print('\nКонтроль совпадения выхода ТВД и последней ступени')
     for name, value in hpt_stages.checks.items():
         print(f'{name}: {value:.4f} %')
+
+
+
+
+    hpc_plot_data = build_hpc_flowpath_data(hpc)
+    plot_machine_flowpath(hpc_plot_data)
+    hpt_plot_data = build_hpt_flowpath_data(hpt)
+    plot_machine_flowpath(hpt_plot_data)
