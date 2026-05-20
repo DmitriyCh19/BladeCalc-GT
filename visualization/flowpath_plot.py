@@ -19,7 +19,7 @@ def plot_machine_flowpath(data: MachineFlowPathPlotData) -> None:
 
     ax_flow.set_title(data.name)
     ax_flow.set_ylabel("R, м")
-    ax_flow.set_aspect("equal", adjustable="box")
+    ax_flow.set_aspect("auto")
     ax_flow.grid(True)
 
     ax_T.set_ylabel("T*, К")
@@ -43,7 +43,7 @@ def _row_polygon(row: FlowPathRow) -> list[tuple[float, float]]:
 
 def _plot_rows(ax, rows: list[FlowPathRow]) -> None:
     for row in rows:
-        poly = Polygon(_row_polygon(row), closed=True, fill=False, linewidth=1.8)
+        poly = Polygon(_row_polygon(row), closed=True, fill=False, linewidth=1.5)
         ax.add_patch(poly)
 
         x_mid = 0.5 * (row.x0 + row.x1)

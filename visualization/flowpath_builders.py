@@ -22,8 +22,8 @@ def build_hpc_flowpath_data(hpc) -> MachineFlowPathPlotData:
     sections.append(
         FlowPathSection(
             x=x,
-            hub=first_stage.rotor.inlet.hub,
-            tip=first_stage.rotor.inlet.tip,
+            hub=first_stage.rotor.inlet.hub / 2,
+            tip=first_stage.rotor.inlet.tip / 2,
         )
     )
     
@@ -47,8 +47,8 @@ def build_hpc_flowpath_data(hpc) -> MachineFlowPathPlotData:
         sections.append(
             FlowPathSection(
                 x=x,
-                hub=stage.rotor.inlet.hub,
-                tip=stage.rotor.inlet.tip,
+                hub=stage.rotor.inlet.hub / 2,
+                tip=stage.rotor.inlet.tip / 2,
             )
         )
 
@@ -60,10 +60,10 @@ def build_hpc_flowpath_data(hpc) -> MachineFlowPathPlotData:
                 row_type="rotor",
                 x0=x,
                 x1=x + length.rotor,
-                hub_in=stage.rotor.inlet.hub,
-                hub_out=stage.rotor.outlet.hub,
-                tip_in=stage.rotor.inlet.tip,
-                tip_out=stage.rotor.outlet.tip,
+                hub_in=stage.rotor.inlet.hub / 2,
+                hub_out=stage.rotor.outlet.hub / 2,
+                tip_in=(stage.rotor.inlet.hub / 2 + stage.rotor.blade_height_in * 0.95),
+                tip_out=(stage.rotor.outlet.hub / 2 + stage.rotor.blade_height_out * 0.95),
             )
         )
 
@@ -71,8 +71,8 @@ def build_hpc_flowpath_data(hpc) -> MachineFlowPathPlotData:
         sections.append(
             FlowPathSection(
                 x=x,
-                hub=stage.rotor.outlet.hub,
-                tip=stage.rotor.outlet.tip,
+                hub=stage.rotor.outlet.hub / 2,
+                tip=stage.rotor.outlet.tip / 2,
             )
         )
 
@@ -90,8 +90,8 @@ def build_hpc_flowpath_data(hpc) -> MachineFlowPathPlotData:
         sections.append(
             FlowPathSection(
                 x=x,
-                hub=stage.rotor.outlet.hub,
-                tip=stage.rotor.outlet.tip,
+                hub=stage.rotor.outlet.hub / 2,
+                tip=stage.rotor.outlet.tip / 2,
             )
         )
 
@@ -109,10 +109,10 @@ def build_hpc_flowpath_data(hpc) -> MachineFlowPathPlotData:
                 row_type="stator",
                 x0=x,
                 x1=x + length.stator,
-                hub_in=stage.rotor.outlet.hub,
-                hub_out=stator_out.hub,
-                tip_in=stage.rotor.outlet.tip,
-                tip_out=stator_out.tip,
+                hub_in=stage.rotor.outlet.hub / 2,
+                hub_out=stator_out.hub / 2,
+                tip_in=stage.rotor.outlet.tip / 2,
+                tip_out=stator_out.tip / 2,
             )
         )
 
@@ -120,8 +120,8 @@ def build_hpc_flowpath_data(hpc) -> MachineFlowPathPlotData:
         sections.append(
             FlowPathSection(
                 x=x,
-                hub=stator_out.hub,
-                tip=stator_out.tip,
+                hub=stator_out.hub / 2,
+                tip=stator_out.tip / 2,
             )
         )
 
@@ -160,8 +160,8 @@ def build_hpt_flowpath_data(hpt) -> MachineFlowPathPlotData:
     sections.append(
         FlowPathSection(
             x=x,
-            hub=hpt.geometry.inlet.hub,
-            tip=hpt.geometry.inlet.tip,
+            hub=hpt.geometry.inlet.hub / 2,
+            tip=hpt.geometry.inlet.tip / 2,
         )
     )
 
@@ -188,10 +188,10 @@ def build_hpt_flowpath_data(hpt) -> MachineFlowPathPlotData:
                 row_type="stator",
                 x0=x,
                 x1=x + length.stator,
-                hub_in=stage.geometry.inlet.hub,
-                hub_out=stage.geometry.stator_outlet.hub,
-                tip_in=stage.geometry.inlet.tip,
-                tip_out=stage.geometry.stator_outlet.tip,
+                hub_in=stage.geometry.inlet.hub / 2,
+                hub_out=stage.geometry.stator_outlet.hub / 2,
+                tip_in=stage.geometry.inlet.tip / 2,
+                tip_out=stage.geometry.stator_outlet.tip / 2,
             )
         )
 
@@ -199,8 +199,8 @@ def build_hpt_flowpath_data(hpt) -> MachineFlowPathPlotData:
         sections.append(
             FlowPathSection(
                 x=x,
-                hub=stage.geometry.stator_outlet.hub,
-                tip=stage.geometry.stator_outlet.tip,
+                hub=stage.geometry.stator_outlet.hub / 2,
+                tip=stage.geometry.stator_outlet.tip / 2,
             )
         )
 
@@ -219,8 +219,8 @@ def build_hpt_flowpath_data(hpt) -> MachineFlowPathPlotData:
         sections.append(
             FlowPathSection(
                 x=x,
-                hub=stage.geometry.stator_outlet.hub,
-                tip=stage.geometry.stator_outlet.tip,
+                hub=stage.geometry.stator_outlet.hub / 2,
+                tip=stage.geometry.stator_outlet.tip / 2,
             )
         )
 
@@ -232,10 +232,10 @@ def build_hpt_flowpath_data(hpt) -> MachineFlowPathPlotData:
                 row_type="rotor",
                 x0=x,
                 x1=x + length.rotor,
-                hub_in=stage.geometry.stator_outlet.hub,
-                hub_out=stage.geometry.rotor_outlet.hub,
-                tip_in=stage.geometry.stator_outlet.tip,
-                tip_out=stage.geometry.rotor_outlet.tip,
+                hub_in=stage.geometry.stator_outlet.hub / 2,
+                hub_out=stage.geometry.rotor_outlet.hub / 2,
+                tip_in=(stage.geometry.stator_outlet.hub / 2 +  0.98 *(stage.geometry.stator_outlet.tip - stage.geometry.stator_outlet.hub) / 2),
+                tip_out=(stage.geometry.rotor_outlet.hub / 2 +  0.98 *(stage.geometry.rotor_outlet.tip - stage.geometry.rotor_outlet.hub) / 2),
             )
         )
 
@@ -243,8 +243,8 @@ def build_hpt_flowpath_data(hpt) -> MachineFlowPathPlotData:
         sections.append(
             FlowPathSection(
                 x=x,
-                hub=stage.geometry.rotor_outlet.hub,
-                tip=stage.geometry.rotor_outlet.tip,
+                hub=stage.geometry.rotor_outlet.hub / 2,
+                tip=stage.geometry.rotor_outlet.tip / 2,
             )
         )
 
@@ -262,8 +262,8 @@ def build_hpt_flowpath_data(hpt) -> MachineFlowPathPlotData:
         sections.append(
             FlowPathSection(
                 x=x,
-                hub=stage.geometry.rotor_outlet.hub,
-                tip=stage.geometry.rotor_outlet.tip,
+                hub=stage.geometry.rotor_outlet.hub / 2,
+                tip=stage.geometry.rotor_outlet.tip / 2,
             )
         )
 

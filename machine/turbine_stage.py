@@ -27,13 +27,16 @@ class TurbineStage:
         kin = self.params.kinematics
         geom = self.params.geometry
         rows = self.params.blade_rows
+        length = self.calculate_stage_length(geom=geom)
+        self.params.blade_rows.rotor.axial_chord = length.rotor
+        self.params.blade_rows.stator.axial_chord = length.stator
 
         work = self.calculate_stage_work(thermo=thermo, kin=kin)
         stator = self.calculate_stator_outlet(flow=flow, thermo=thermo, kin=kin, geom=geom, work=work)
         rotor = self.calculate_rotor_outlet(flow=flow, thermo=thermo, kin=kin, geom=geom, work=work, stator=stator)
         blade_rows = self.calculate_blade_rows(geom=geom, rows=rows, kin=kin, stator=stator, rotor=rotor)
 
-        length = self.calculate_stage_length(geom=geom)
+        
         result = self.assemble_result(
             thermo=thermo, work=work, stator=stator,
             rotor=rotor, blade_rows=blade_rows, length=length)
@@ -131,7 +134,7 @@ class TurbineStage:
         alpha_2_rad = math.asin(w_2 * math.sin(beta_2_rad) / c_2)
         alpha_2_deg = math.degrees(alpha_2_rad)
 
-        T_2 = T_2 = thermo.T_in - work.L_stage / cp_gas
+        T_2 = thermo.T_in - work.L_stage / cp_gas
         a_2crit = velocity_critical(k=K_GAS, R=R_GAS, T=T_2)
         lambda_c2 = c_2 / a_2crit
         pi_lambda_c2 = pi_lambda(lam=lambda_c2, k=K_GAS)
@@ -187,7 +190,7 @@ class TurbineStage:
         )
 
     def calculate_stage_length(self, geom: TurbineStageGeometryParams) -> TurbineStageLength:
-        K = 0.6
+        K = 0.06
         len_rotor = K * geom.h_2_rotor_rel * geom.h_2_rotor
         len_stator = 1.15 * len_rotor
         gap = 0.15 * len_rotor
